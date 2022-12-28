@@ -1,0 +1,30 @@
+    In clasa Tema2 am verificat ca numarul de argumente sa corespunda, apoi am deschis fisierele de intrare.  Am pornit
+thread-urile de nivel 1, am asteptat ca toate sa se termine, am golit thread pool-ul si am inchis fisierele. Am folosit
+interfata ExecutorService pentru a putea implementa modelul RepliactedWorkers  astfel incat thread-urile de nivel 1 sa poata
+crea un numar mare de thread-uri de nivel 2, dar sa fie active doar numarul maxim primit ca input.
+    Am deschis fisierele de intrare in Tema2 pentru a nu avea probleme legate de suprascriere. Obiectele de scriere si citire
+(BufferedWriter si BufferedReader) au fost instantiate in clasa Tema2 pentru fiserele de iesire si pentru orders.txt si
+trimise ca parametru catre thread-urile de nivel 1 si 2 pentru ca in cazul citirii sa nu se parcurga textul de la inceput
+de catre fiecare thread de nivel 1, iar in cazul scrierii sa nu am probleme legate de accesarea aceleiasi zone de memorie
+sau intercalearea outputurilor thread-urilor. Pentru citire si scriere am folosit BufferedReader, respectiv BufferedWriter
+pentru eficienta crescuta atunci cand este vorba de scriere de foarte multe ori si cu buffer size mic, BufferedReader fiind
+totodata si sincron, deci mai bun de folosit in aplicatii de multithreading.
+    In clasa OrderThread, aferenta thread-urilor de nivel 1, am citit o linie din fisierul de intare orders.txt, am
+extras prin token-izare id-ul comenzii si numarul de produse ale acesteia, am verificat sa nu fie de tip Empty Order.
+Daca aveam cel putin un produs comandat, deschideam fisierul de intrare order_products.txt si initializam un obiect de tip
+BufferedReader pentru citire si il trimiteam ca parametru catre thread-urile de nivel 2 pentru o paralelizarea a citirii
+din acest fisier. Am initializat un obiect ce este folosit ca zavor si un AtomicInteger, acestea vor fi transmise ca
+parametru pentru thread-urile de nivel 2. Adaug in thread pool un numar de threadd-uri de nivel 2 egal cu numarul de
+produse din comanda si astept ca treadurile de nivel 2 sa termine executia, iar apoi marchez comanda in fisierul orders_out.txt
+ca fiind shipped.
+    In clasa ProductThread, aferenta thread-urilor de nivel 2, caut o linie (avand un numar de thread-uri de nivel 2
+egal cu numarul de produse din fiecare comanda si trimitand obiectul de citire ca parametru, este suficient ca un thread sa se
+ocupe doar de prima linie)  ce corespunde comenzii cu id-ul primit ca parametru (astfel asigurandu-ma ca evit
+produsele ce nu sunt intr-o comanda valida), tot prin tokenizare. Notez in fisierul de iesire order_products_out.txt produsul
+ca fiind shipped, incrementez AtomicIntegerul cu numarul de thread-uri de nivel 2 create de thread-ul de nivel 1 parinte.
+Odata ce toate thread-urile de nivel 2 copil au fost create pentru un parinte, il notific pentru a iesi din starea de wait.
+Apoi decrementez numarul de thread-uri de nivel 2 din coada.
+    In clasa ProductThread am comentat 49-53. Acolo adaugasem o inatrziere de 5 nanos pentru a observa mai bine scalabilitatea,
+operatiile din thread-urile de nivel 2 fiind destul de dummy. Astfel, cu aceasta inarziere, cu un numar maxim de 1 thread,
+pentru ultimul test din checker, durata a fost de 45,41s, 2 thread-uri 23.77s, 4 thread-uri 13,17s. Testele au fost facute
+pe sistemul local folosind WSL.
